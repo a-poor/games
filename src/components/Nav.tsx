@@ -2,43 +2,37 @@ import { A } from "@solidjs/router";
 import type { Component } from "solid-js";
 
 export default function Nav() {
-  const links = [
-    {
-      text: "Connections",
-      href: "/connections",
-    },
-    {
-      text: "Strands",
-      href: "/strands",
-    },
-    {
-      text: "About",
-      href: "/about",
-    },
-  ];
   return (
-    <div class="max-w-7xl mx-auto mt-2 flex items-center space-x-4">
+    <div class="max-w-7xl mx-auto mt-2 px-1 sm:px-4 flex items-center space-x-4">
       <A href="/" class="flex items-center">
-        <PuzzleIcon class="size-10" />
-        <span class="text-3xl font-medium">Games</span>
+        <PuzzleIcon class="size-10 stroke-surface-950 dark:stroke-surface-50" />
+        <span class="text-3xl font-medium text-surface-950 dark:text-surface-100">
+          Games
+        </span>
       </A>
       <nav class="text-xl pt-1.5">
         <ul class="flex space-x-3">
           <li>
             <A
               href="/connections"
-              class="text-surface-600 hover:text-surface-900"
+              class="text-surface-600 hover:text-surface-950 dark:text-surface-400 dark:hover:text-surface-100"
             >
               Connections
             </A>
           </li>
           <li>
-            <A href="/strands" class="text-surface-600 hover:text-surface-900">
+            <A
+              href="/strands"
+              class="text-surface-600 hover:text-surface-950 dark:text-surface-400 dark:hover:text-surface-100"
+            >
               Strands
             </A>
           </li>
           <li>
-            <A href="/about" class="text-surface-600 hover:text-surface-900">
+            <A
+              href="/about"
+              class="text-surface-600 hover:text-surface-950 dark:text-surface-400 dark:hover:text-surface-100"
+            >
               About
             </A>
           </li>

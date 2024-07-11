@@ -7,3 +7,9 @@
 body {
     @apply bg-surface-300;
 }
+
+@media (prefers-color-scheme: dark) {
+    body {
+        @apply bg-surface-700;
+    }
+}
