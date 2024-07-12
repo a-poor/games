@@ -16,6 +16,7 @@ export default function Nav() {
             <A
               href="/connections"
               class="text-surface-600 hover:text-surface-950 dark:text-surface-400 dark:hover:text-surface-100"
+              activeClass="underline decoration-1"
             >
               Connections
             </A>
@@ -24,6 +25,7 @@ export default function Nav() {
             <A
               href="/strands"
               class="text-surface-600 hover:text-surface-950 dark:text-surface-400 dark:hover:text-surface-100"
+              activeClass="underline decoration-1"
             >
               Strands
             </A>
@@ -32,6 +34,7 @@ export default function Nav() {
             <A
               href="/about"
               class="text-surface-600 hover:text-surface-950 dark:text-surface-400 dark:hover:text-surface-100"
+              activeClass="underline decoration-1"
             >
               About
             </A>

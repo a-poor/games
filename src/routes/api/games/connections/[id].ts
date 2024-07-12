@@ -18,6 +18,7 @@ export async function GET({ params }: APIEvent) {
   return new Response(String(res.rows[0].data), {
     headers: {
       "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=3600",
     },
   });
 }
