@@ -4,7 +4,7 @@ import { PuzzlePieceIcon } from "@heroicons/react/24/solid";
 export default function Nav() {
   return (
     <>
-      <div className="max-w-5xl mx-auto px-2 flex items-center space-x-3">
+      <div className="max-w-5xl mx-auto px-2 pt-2 pb-4 flex items-center space-x-3">
         <Link to="/" className="flex items-center text-3xl">
           <PuzzlePieceIcon className="size-6" />
           <span>Games</span>
