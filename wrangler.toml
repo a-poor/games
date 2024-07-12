@@ -25,10 +25,11 @@ pages_build_output_dir = "./build/client"
 
 # Bind a D1 database. D1 is Cloudflare’s native serverless SQL database.
 # Docs: https://developers.cloudflare.com/pages/functions/bindings/#d1-databases
-[[d1_databases]]
-binding = "DB" # i.e. available in your Worker on env.DB
-database_name = "games"
-database_id = "21f1c132-24c2-40d0-b28a-eaca2c5fb661"
+# [[d1_databases]]
+# binding = "DB"                                       # i.e. available in your Worker on env.DB
+# database_name = "games"
+# database_id = "21f1c132-24c2-40d0-b28a-eaca2c5fb661"
+# migrations_dir = './migrations'
 
 # Bind a Durable Object. Durable objects are a scale-to-zero compute primitive based on the actor model.
 # Durable Objects can live for as long as needed. Use these when you need a long-running "server", such as in realtime apps.
@@ -52,9 +53,9 @@ database_id = "21f1c132-24c2-40d0-b28a-eaca2c5fb661"
 
 # Bind an R2 Bucket. Use R2 to store arbitrarily large blobs of data, such as files.
 # Docs: https://developers.cloudflare.com/pages/functions/bindings/#r2-buckets
-# [[r2_buckets]]
-# binding = "MY_BUCKET"
-# bucket_name = "my-bucket"
+[[r2_buckets]]
+binding = "GAMES_BUCKET"
+bucket_name = "games"
 
 # Bind another Worker service. Use this binding to call another Worker without network overhead.
 # Docs: https://developers.cloudflare.com/pages/functions/bindings/#service-bindings
@@ -83,4 +84,3 @@ database_id = "21f1c132-24c2-40d0-b28a-eaca2c5fb661"
 # [[env.production.kv_namespaces]]
 # binding = "MY_KV_NAMESPACE"
 # id = "<PRODUCTION_NAMESPACE_ID>"
-

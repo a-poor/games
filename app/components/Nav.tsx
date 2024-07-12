@@ -1,12 +1,12 @@
 import { Link } from "@remix-run/react";
-import { PuzzlePieceIcon } from "@heroicons/react/24/solid";
+import { PuzzlePieceIcon } from "@heroicons/react/24/outline";
 
 export default function Nav() {
   return (
     <>
       <div className="max-w-5xl mx-auto px-2 pt-2 pb-4 flex items-center space-x-3">
-        <Link to="/" className="flex items-center text-3xl">
-          <PuzzlePieceIcon className="size-6" />
+        <Link to="/" className="flex items-center text-3xl space-x-1">
+          <PuzzlePieceIcon className="size-7" />
           <span>Games</span>
         </Link>
         <nav>
