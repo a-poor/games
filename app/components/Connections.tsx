@@ -1,5 +1,6 @@
 import type { ConnGameData } from "~/lib/dtypes";
 import { useConnGameState } from "~/lib/connections";
+import { DateTime } from "luxon";
 
 const MISTAKE_COUNT = 4;
 
@@ -7,6 +8,14 @@ export default function Connections({ gameData }: { gameData: ConnGameData }) {
   const [gameState, gameDispatch] = useConnGameState(gameData);
   return (
     <div className="grid grid-cols-1 max-w-xl mx-auto gap-4">
+      <div className="text-center">
+        {DateTime.fromISO(gameData.print_date).toLocaleString({
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })}
+      </div>
       <div className="grid grid-cols-4 grid-rows-4 gap-4">
         {/* The found groups... */}
         {gameState.guesses
@@ -47,7 +56,7 @@ export default function Connections({ gameData }: { gameData: ConnGameData }) {
             {MISTAKE_COUNT - gameState.guesses.filter((g) => !g.correct).length}
           </span>
         </div>
-        <div className="flex gap-1 items-center">
+        <div className="grid grid-cols-4 gap-1 items-center">
           {Array.from({
             length:
               MISTAKE_COUNT -
@@ -100,9 +109,16 @@ function ConnGroup({
   ];
   const groupColorClass = groupColorClasses[groupId];
   return (
-    <div className={"col-span-4 " + groupColorClass}>
-      <h2>{groupName}</h2>
-      <p>{words.join(", ")}</p>
+    <div
+      className={
+        "h-32 flex items-center rounded-lg text-center col-span-4 " +
+        groupColorClass
+      }
+    >
+      <div className="w-full">
+        <h2 className="text-xl font-semibold">{groupName}</h2>
+        <p className="text-lg">{words.join(", ")}</p>
+      </div>
     </div>
   );
 }

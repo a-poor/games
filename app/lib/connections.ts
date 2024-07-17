@@ -115,12 +115,12 @@ export const useConnGameState = (gameData: ConnGameData) => {
 
       case "SHUFFLE":
         return (() => {
-          const oldCards = [...state.cards];
+          const oldCards = structuredClone(state.cards);
           const newCards = [];
-          for (let i = 0; i < state.cards.length; i++) {
+          while (oldCards.length > 0) {
             const ri = Math.floor(Math.random() * oldCards.length);
             newCards.push(oldCards[ri]);
-            oldCards.splice(ri);
+            oldCards.splice(ri, 1);
           }
           return {
             ...state,
@@ -130,11 +130,56 @@ export const useConnGameState = (gameData: ConnGameData) => {
 
       case "SUBMIT_GUESS":
         return (() => {
+          // Get the selected words
           const selectedWords = cards.filter((c) => c.selected);
+
+          // Are enough selected?
           if (selectedWords.length < 4) {
             return state;
           }
-          return state;
+
+          // Get the groups of the selected words
+          const groups = selectedWords
+            .map((c) => c.group)
+            .reduce(
+              (acc, g) => (acc.indexOf(g) === -1 ? [...acc, g] : acc),
+              [] as number[]
+            );
+
+          // More than one group?
+          if (groups.length > 1) {
+            return {
+              ...state,
+              guesses: [
+                ...state.guesses,
+                {
+                  correct: false,
+                  words: selectedWords.map((c) => ({
+                    word: c.word,
+                    group: c.group,
+                  })),
+                },
+              ],
+            };
+          }
+
+          // Return the updated state with:
+          // - The selected word cards removed
+          // - The new correct guess set
+          return {
+            ...state,
+            guesses: [
+              ...state.guesses,
+              {
+                correct: true,
+                words: selectedWords.map((c) => ({
+                  word: c.word,
+                  group: c.group,
+                })),
+              },
+            ],
+            cards: state.cards.filter((c) => !c.selected),
+          };
         })();
     }
   }, initialState) as unknown as ConnReducer;

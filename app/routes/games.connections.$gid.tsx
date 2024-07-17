@@ -7,7 +7,6 @@ import type {
 import { useLoaderData } from "@remix-run/react";
 import { DateTime } from "luxon";
 import Nav from "~/components/Nav";
-import { useConnGameState } from "~/lib/connections";
 import type { ConnGameData } from "~/lib/dtypes";
 import Connections from "~/components/Connections";
 
