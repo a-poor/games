@@ -1,8 +1,13 @@
 import { json } from "@remix-run/cloudflare";
-import type { LoaderFunction, MetaFunction } from "@remix-run/cloudflare";
+import type {
+  LoaderFunctionArgs,
+  MetaFunction,
+  TypedResponse,
+} from "@remix-run/cloudflare";
 import { useLoaderData } from "@remix-run/react";
 import { DateTime } from "luxon";
 import Nav from "~/components/Nav";
+import { useConnGameState } from "~/lib/connections";
 import type { ConnGameData } from "~/lib/dtypes";
 
 const FIRST_GAME = "2023-06-12";
@@ -20,7 +25,10 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export const loader: LoaderFunction = async ({ context, params }) => {
+export async function loader({
+  context,
+  params,
+}: LoaderFunctionArgs): Promise<TypedResponse<ConnGameData>> {
   // Get and validate the parameter...
   const { gid } = params;
   if (!gid) {
@@ -80,7 +88,7 @@ export const loader: LoaderFunction = async ({ context, params }) => {
     console.error(
       "Response from NYT wasn't successful: " + JSON.stringify(data),
     );
-    return new Response(null, {
+    throw new Response(null, {
       status: 404,
       statusText: "Not found",
     });
@@ -90,17 +98,23 @@ export const loader: LoaderFunction = async ({ context, params }) => {
   // Add it to R2
   await bucket.put(key, JSON.stringify(gameData));
   return json(gameData);
-};
+}
 
 export default function Index() {
-  const data = useLoaderData();
+  const data = useLoaderData<typeof loader>();
+  const [gameState, gameDispatch] = useConnGameState(data);
   return (
     <>
       <header>
         <Nav />
       </header>
       <main>
-        <pre>{JSON.stringify(data, null, 2)}</pre>
+        <button
+          onClick={() => gameDispatch({ type: "SELECT_WORD", word: "GYM" })}
+        >
+          Gym
+        </button>
+        <pre>{JSON.stringify(gameState, null, 2)}</pre>
       </main>
     </>
   );
