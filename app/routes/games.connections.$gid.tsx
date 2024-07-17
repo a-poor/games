@@ -9,6 +9,7 @@ import { DateTime } from "luxon";
 import Nav from "~/components/Nav";
 import { useConnGameState } from "~/lib/connections";
 import type { ConnGameData } from "~/lib/dtypes";
+import Connections from "~/components/Connections";
 
 const FIRST_GAME = "2023-06-12";
 
@@ -86,7 +87,7 @@ export async function loader({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ((data as any)?.status?.toLowerCase() !== "ok") {
     console.error(
-      "Response from NYT wasn't successful: " + JSON.stringify(data),
+      "Response from NYT wasn't successful: " + JSON.stringify(data)
     );
     throw new Response(null, {
       status: 404,
@@ -102,20 +103,18 @@ export async function loader({
 
 export default function Index() {
   const data = useLoaderData<typeof loader>();
-  const [gameState, gameDispatch] = useConnGameState(data);
   return (
     <>
       <header>
         <Nav />
       </header>
       <main>
-        <button
-          onClick={() => gameDispatch({ type: "SELECT_WORD", word: "GYM" })}
-        >
-          Gym
-        </button>
-        <pre>{JSON.stringify(gameState, null, 2)}</pre>
+        <Connections gameData={data} />
       </main>
+      <details>
+        <summary>Loader Data</summary>
+        <pre>{JSON.stringify(data, null, 2)}</pre>
+      </details>
     </>
   );
 }
