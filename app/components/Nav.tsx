@@ -19,14 +19,16 @@ export default function Nav() {
                 Connections
               </Link>
             </li>
-            <li>
+
+            {/* TODO - Uncommend when Strands is ready... */}
+            {/* <li>
               <Link
                 to="/games/strands"
                 className="text-xl text-surface-600 hover:text-surface-900"
               >
                 Strands
               </Link>
-            </li>
+            </li> */}
           </ul>
         </nav>
       </div>

@@ -14,12 +14,9 @@ const SHOW_ONE_AWAY_TIMEOUT = 5000;
  */
 export default function Connections({ gameData }: { gameData: ConnGameData }) {
   const [gameState, gameDispatch] = useConnGameState(gameData);
-  // const gameStatus =
-  //   gameState.guesses.length < 4
-  //     ? "PLAYING"
-  //     : gameState.guesses.filter((g) => g.correct).length === 4
-  //     ? "WON"
-  //     : "LOST";
+  const gameIsOver = gameState.guesses.length === 4;
+
+  const [showResults, setShowResults] = useState(false);
 
   const [isOneAway, setIsOneAway] = useState(false);
   useEffect(() => {
@@ -55,7 +52,7 @@ export default function Connections({ gameData }: { gameData: ConnGameData }) {
     return () => clearTimeout(timeout);
   }, [gameState.guesses]);
   return (
-    <div className="grid grid-cols-1 max-w-xl mx-auto gap-4">
+    <div className="grid grid-cols-1 max-w-xl w-fit mx-auto gap-4 relative">
       <div className="text-center text-xl">
         {DateTime.fromISO(gameData.print_date).toLocaleString({
           weekday: "long",
@@ -67,7 +64,7 @@ export default function Connections({ gameData }: { gameData: ConnGameData }) {
       <div className="text-center font-semibold h-6">
         {isOneAway && <span>One away!</span>}
       </div>
-      <div className="grid grid-cols-4 grid-rows-4 gap-4">
+      <div className="grid grid-cols-4 grid-rows-4 gap-4 ">
         {/* The found groups... */}
         {gameState.guesses
           .filter((g) => g.correct)
@@ -117,28 +114,57 @@ export default function Connections({ gameData }: { gameData: ConnGameData }) {
           ))}
         </div>
       </div>
-      <div className="flex justify-center gap-1">
-        <button
-          className="text-xl font-medium text-surface-950 border border-surface-800 rounded-full px-3 py-1"
-          onClick={() => gameDispatch({ type: "SHUFFLE" })}
-        >
-          Shuffle
-        </button>
-        <button
-          className="text-xl font-medium text-surface-950 disabled:text-surface-500 border border-surface-800 disabled:border-surface-500 rounded-full px-3 py-1"
-          onClick={() => gameDispatch({ type: "DESELECT_ALL" })}
-          disabled={gameState.cards.filter((c) => c.selected).length === 0}
-        >
-          Deselect
-        </button>
-        <button
-          className="text-xl font-medium text-surface-950 disabled:text-surface-500 border border-surface-800 disabled:border-surface-500 rounded-full px-3 py-1"
-          onClick={() => gameDispatch({ type: "SUBMIT_GUESS" })}
-          disabled={gameState.cards.filter((c) => c.selected).length !== 4}
-        >
-          Submit
-        </button>
-      </div>
+      {gameIsOver || !gameIsOver ? (
+        <div className="flex justify-center gap-1">
+          <button
+            className="text-xl font-medium text-surface-950 border border-surface-800 rounded-full px-3 py-1"
+            onClick={() => setShowResults(true)}
+          >
+            View Results
+          </button>
+          <button
+            className="text-xl font-medium text-surface-950 border border-surface-800 rounded-full px-3 py-1"
+            onClick={() => gameDispatch({ type: "RESET" })}
+          >
+            Reset
+          </button>
+          <button
+            className="text-xl font-medium text-surface-950 disabled:text-surface-500 border border-surface-800 disabled:border-surface-500 rounded-full px-3 py-1"
+            onClick={() => gameDispatch({ type: "SUBMIT_GUESS" })}
+            disabled={gameState.cards.filter((c) => c.selected).length !== 4}
+          >
+            Submit
+          </button>
+        </div>
+      ) : (
+        <div className="flex justify-center gap-1">
+          <button
+            className="text-xl font-medium text-surface-950 border border-surface-800 rounded-full px-3 py-1"
+            onClick={() => gameDispatch({ type: "SHUFFLE" })}
+          >
+            Shuffle
+          </button>
+          <button
+            className="text-xl font-medium text-surface-950 disabled:text-surface-500 border border-surface-800 disabled:border-surface-500 rounded-full px-3 py-1"
+            onClick={() => gameDispatch({ type: "DESELECT_ALL" })}
+            disabled={gameState.cards.filter((c) => c.selected).length === 0}
+          >
+            Deselect
+          </button>
+          <button
+            className="text-xl font-medium text-surface-950 disabled:text-surface-500 border border-surface-800 disabled:border-surface-500 rounded-full px-3 py-1"
+            onClick={() => gameDispatch({ type: "SUBMIT_GUESS" })}
+            disabled={gameState.cards.filter((c) => c.selected).length !== 4}
+          >
+            Submit
+          </button>
+        </div>
+      )}
+      {showResults && (
+        <div className="absolute inset-0 bg-white/85 grid place-content-center">
+          <Results guesses={gameState.guesses} />
+        </div>
+      )}
     </div>
   );
 }
@@ -153,7 +179,7 @@ function ConnGroup({
   groupId: number;
 }) {
   const groupColorClasses = [
-    "bg-yellow-500", // Yellow
+    "bg-yellow-400", // Yellow
     "bg-green-500", // Green
     "bg-sky-500", // Blue
     "bg-purple-500", // Purple
@@ -186,12 +212,19 @@ function ConnWord({
   return (
     <label
       htmlFor={`word-${word}`}
-      className={
-        "h-32 w-32 rounded-lg select-none grid content-center text-lg font-semibold " +
-        (selected
+      className={[
+        "size-20 sm:size-32 rounded-lg select-none grid content-center font-medium sm:font-semibold text-xs tracking-tighter",
+        selected
           ? "bg-surface-700 text-surface-50"
-          : "bg-surface-300 text-surface-900")
-      }
+          : "bg-surface-300 text-surface-900",
+        word.length < 6 ? "sm:text-2xl sm:tracking-normal" : null,
+        word.length >= 6 && word.length < 10
+          ? "sm:text-lg sm:tracking-tight"
+          : null,
+        word.length >= 10 ? "sm:text-sm sm:tracking-tight" : null,
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       <input
         id={`word-${word}`}
@@ -205,5 +238,39 @@ function ConnWord({
         {word}
       </span>
     </label>
+  );
+}
+
+function Results({
+  guesses,
+}: {
+  guesses: {
+    words: { group: number }[];
+  }[];
+}) {
+  const groupColorClasses = [
+    "bg-yellow-400", // Yellow
+    "bg-green-500", // Green
+    "bg-sky-500", // Blue
+    "bg-purple-500", // Purple
+  ];
+  return (
+    <>
+      <div></div>
+      <div className="h-fit grid grid-cols-4 gap-1 max-w-xs w-fit mx-auto">
+        {guesses
+          .map((g) => g.words)
+          .flat()
+          .map((w, i) => (
+            <div
+              key={i}
+              className={["size-8 rounded-lg", groupColorClasses[w.group]].join(
+                " "
+              )}
+            />
+          ))}
+      </div>
+      <div></div>
+    </>
   );
 }

@@ -38,6 +38,9 @@ export type ConnGameAction =
     }
   | {
       type: "SHUFFLE";
+    }
+  | {
+      type: "RESET";
     };
 
 export type ConnReducer = [
@@ -181,6 +184,8 @@ export const useConnGameState = (gameData: ConnGameData) => {
             cards: state.cards.filter((c) => !c.selected),
           };
         })();
+      case "RESET":
+        return structuredClone(initialState);
     }
-  }, initialState) as unknown as ConnReducer;
+  }, structuredClone(initialState)) as unknown as ConnReducer;
 };
