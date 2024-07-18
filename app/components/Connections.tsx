@@ -1,20 +1,71 @@
+import { useState, useEffect } from "react";
+import { DateTime } from "luxon";
 import type { ConnGameData } from "~/lib/dtypes";
 import { useConnGameState } from "~/lib/connections";
-import { DateTime } from "luxon";
 
 const MISTAKE_COUNT = 4;
 
+const SHOW_ONE_AWAY_TIMEOUT = 5000;
+
+/**
+ *
+ *
+ * @todo Limit adjust card font size by word length
+ */
 export default function Connections({ gameData }: { gameData: ConnGameData }) {
   const [gameState, gameDispatch] = useConnGameState(gameData);
+  // const gameStatus =
+  //   gameState.guesses.length < 4
+  //     ? "PLAYING"
+  //     : gameState.guesses.filter((g) => g.correct).length === 4
+  //     ? "WON"
+  //     : "LOST";
+
+  const [isOneAway, setIsOneAway] = useState(false);
+  useEffect(() => {
+    console.log("Checking one away...");
+
+    // No guesses? Stop here.
+    if (gameState.guesses.length === 0) return;
+
+    // Get the number of groups
+    const lastGuess = gameState.guesses[gameState.guesses.length - 1];
+    const groups = lastGuess.words
+      .map((w) => w.group)
+      .reduce(
+        (acc, g) => ({ ...acc, [g]: acc[g] ? acc[g] + 1 : 1 }),
+        {} as Record<number, number>
+      );
+    console.log(groups);
+
+    // If there aren't two groups (3+1) then stop here.
+    const counts = Object.values(groups).toSorted();
+    if (counts.length !== 2) return;
+
+    // If there are two groups, check that they are 3 and 1
+    if (counts[0] !== 1 || counts[1] !== 3) return;
+    console.log("One away!");
+
+    // If we're here, then we're one away.
+    setIsOneAway(true);
+    const timeout = setTimeout(
+      () => setIsOneAway(false),
+      SHOW_ONE_AWAY_TIMEOUT
+    );
+    return () => clearTimeout(timeout);
+  }, [gameState.guesses]);
   return (
     <div className="grid grid-cols-1 max-w-xl mx-auto gap-4">
-      <div className="text-center">
+      <div className="text-center text-xl">
         {DateTime.fromISO(gameData.print_date).toLocaleString({
           weekday: "long",
           month: "long",
           day: "numeric",
           year: "numeric",
         })}
+      </div>
+      <div className="text-center font-semibold h-6">
+        {isOneAway && <span>One away!</span>}
       </div>
       <div className="grid grid-cols-4 grid-rows-4 gap-4">
         {/* The found groups... */}
