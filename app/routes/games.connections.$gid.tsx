@@ -4,13 +4,18 @@ import type {
   MetaFunction,
   TypedResponse,
 } from "@remix-run/cloudflare";
-import { useLoaderData } from "@remix-run/react";
+import { ClientLoaderFunctionArgs, useLoaderData } from "@remix-run/react";
 import { DateTime } from "luxon";
 import Nav from "~/components/Nav";
 import type { ConnGameData } from "~/lib/dtypes";
 import Connections from "~/components/Connections";
-
-const FIRST_GAME = "2023-06-12";
+import { FIRST_GAME } from "~/lib/connections";
+import {
+  getGamesDB,
+  CONN_DATA_STORE_NAME,
+  CONN_STATE_STORE_NAME,
+} from "~/lib/data";
+import { useEffect } from "react";
 
 const fmtConnGameDataUrl = (d: string) =>
   `https://www.nytimes.com/svc/connections/v2/${d}.json`;
@@ -97,11 +102,49 @@ export async function loader({
 
   // Add it to R2
   await bucket.put(key, JSON.stringify(gameData));
-  return json(gameData);
+  return json(gameData, {
+    headers: {
+      "Cache-Control": "public, max-age=3600",
+    },
+  });
+}
+
+export async function clientLoader({
+  params,
+  serverLoader,
+}: ClientLoaderFunctionArgs) {
+  // Get the game id param...
+  const gameId = params.gid;
+  if (!gameId) {
+    return serverLoader<typeof loader>();
+  }
+
+  // Check if we have it in the store...
+  const db = await getGamesDB();
+  const gameData = await db.get(CONN_DATA_STORE_NAME, gameId);
+
+  // If we have it, return it...
+  if (gameData) {
+    return gameData;
+  }
+
+  // Otherwise, fetch it...
+  const data = await serverLoader<typeof loader>();
+
+  // And store it...
+  await db.put(CONN_DATA_STORE_NAME, data, gameId);
+
+  // And return it...
+  return data;
 }
 
 export default function Index() {
   const data = useLoaderData<typeof loader>();
+  useEffect(() => {
+    getGamesDB()
+      .then((db) => db.get(CONN_STATE_STORE_NAME, data.print_date))
+      .then((d) => {});
+  });
   return (
     <>
       <header>
@@ -110,10 +153,6 @@ export default function Index() {
       <main>
         <Connections gameData={data} />
       </main>
-      <details>
-        <summary>Loader Data</summary>
-        <pre>{JSON.stringify(data, null, 2)}</pre>
-      </details>
     </>
   );
 }

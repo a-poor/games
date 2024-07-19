@@ -1,5 +1,8 @@
 import { useReducer } from "react";
 import type { ConnGameData } from "./dtypes";
+import { useConnGameDBState, setConnGameDBState } from "./data";
+
+export const FIRST_GAME = "2023-06-12";
 
 export type ConnGameState = {
   groups: {
@@ -41,6 +44,10 @@ export type ConnGameAction =
     }
   | {
       type: "RESET";
+    }
+  | {
+      type: "SET_STATE";
+      state: ConnGameState;
     };
 
 export type ConnReducer = [
@@ -86,35 +93,47 @@ export const useConnGameState = (gameData: ConnGameData) => {
     console.log("action", action);
     switch (action.type) {
       case "SELECT_WORD":
-        if (cards.filter((c) => c.selected).length >= 4) {
-          return state;
-        }
-        return {
-          ...state,
-          cards: cards.map((c) => ({
-            ...c,
-            selected: c.word === action.word ? true : c.selected,
-          })),
-        };
+        return (() => {
+          if (cards.filter((c) => c.selected).length >= 4) {
+            return state;
+          }
+          const newState = {
+            ...state,
+            cards: cards.map((c) => ({
+              ...c,
+              selected: c.word === action.word ? true : c.selected,
+            })),
+          };
+          setConnGameDBState(gameData.print_date, newState);
+          return newState;
+        })();
 
       case "DESELECT_WORD":
-        return {
-          groups,
-          guesses,
-          cards: cards.map((c) => ({
-            ...c,
-            selected: c.word === action.word ? false : c.selected,
-          })),
-        };
+        return (() => {
+          const newState = {
+            groups,
+            guesses,
+            cards: cards.map((c) => ({
+              ...c,
+              selected: c.word === action.word ? false : c.selected,
+            })),
+          };
+          setConnGameDBState(gameData.print_date, newState);
+          return newState;
+        })();
 
       case "DESELECT_ALL":
-        return {
-          ...state,
-          cards: state.cards.map((c) => ({
-            ...c,
-            selected: false,
-          })),
-        };
+        return (() => {
+          const newState = {
+            ...state,
+            cards: state.cards.map((c) => ({
+              ...c,
+              selected: false,
+            })),
+          };
+          setConnGameDBState(gameData.print_date, newState);
+          return newState;
+        })();
 
       case "SHUFFLE":
         return (() => {
@@ -125,10 +144,12 @@ export const useConnGameState = (gameData: ConnGameData) => {
             newCards.push(oldCards[ri]);
             oldCards.splice(ri, 1);
           }
-          return {
+          const newState = {
             ...state,
             cards: newCards,
           };
+          setConnGameDBState(gameData.print_date, newState);
+          return newState;
         })();
 
       case "SUBMIT_GUESS":
@@ -151,7 +172,7 @@ export const useConnGameState = (gameData: ConnGameData) => {
 
           // More than one group?
           if (groups.length > 1) {
-            return {
+            const newState = {
               ...state,
               guesses: [
                 ...state.guesses,
@@ -164,12 +185,14 @@ export const useConnGameState = (gameData: ConnGameData) => {
                 },
               ],
             };
+            setConnGameDBState(gameData.print_date, newState);
+            return newState;
           }
 
           // Return the updated state with:
           // - The selected word cards removed
           // - The new correct guess set
-          return {
+          const newState = {
             ...state,
             guesses: [
               ...state.guesses,
@@ -183,9 +206,20 @@ export const useConnGameState = (gameData: ConnGameData) => {
             ],
             cards: state.cards.filter((c) => !c.selected),
           };
+          setConnGameDBState(gameData.print_date, newState);
+          return newState;
         })();
       case "RESET":
-        return structuredClone(initialState);
+        return (() => {
+          const newState = structuredClone(initialState);
+          setConnGameDBState(gameData.print_date, newState);
+          return newState;
+        })();
+      case "SET_STATE":
+        return (() => {
+          setConnGameDBState(gameData.print_date, action.state); // Necessary?
+          return action.state;
+        })();
     }
   }, structuredClone(initialState)) as unknown as ConnReducer;
 };

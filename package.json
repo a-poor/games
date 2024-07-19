@@ -20,6 +20,8 @@
     "@remix-run/cloudflare": "^2.9.2",
     "@remix-run/cloudflare-pages": "^2.9.2",
     "@remix-run/react": "^2.9.2",
+    "@tanstack/react-virtual": "^3.8.3",
+    "idb": "^8.0.0",
     "isbot": "^4.1.0",
     "luxon": "^3.4.4",
     "react": "^18.2.0",

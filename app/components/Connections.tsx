@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { DateTime } from "luxon";
 import type { ConnGameData } from "~/lib/dtypes";
 import { useConnGameState } from "~/lib/connections";
+import { XMarkIcon } from "@heroicons/react/24/solid";
+import { DocumentDuplicateIcon } from "@heroicons/react/20/solid";
+import { getGamesDB, CONN_STATE_STORE_NAME } from "~/lib/data";
 
 const MISTAKE_COUNT = 4;
 
@@ -13,7 +16,20 @@ const SHOW_ONE_AWAY_TIMEOUT = 5000;
  * @todo Limit adjust card font size by word length
  */
 export default function Connections({ gameData }: { gameData: ConnGameData }) {
+  const [loaded, setLoaded] = useState(false);
   const [gameState, gameDispatch] = useConnGameState(gameData);
+  useEffect(() => {
+    if (loaded) return;
+    getGamesDB()
+      .then((db) => db.get(CONN_STATE_STORE_NAME, gameData.print_date))
+      .then((data) => {
+        if (data) {
+          gameDispatch({ type: "SET_STATE", state: data });
+        }
+        setLoaded(true);
+      });
+  });
+
   const gameIsOver = gameState.guesses.length === 4;
 
   const [showResults, setShowResults] = useState(false);
@@ -51,6 +67,15 @@ export default function Connections({ gameData }: { gameData: ConnGameData }) {
     );
     return () => clearTimeout(timeout);
   }, [gameState.guesses]);
+
+  useEffect(() => {
+    // Only run if the game is over
+    if (!gameIsOver) return;
+
+    // Show the results page
+    setShowResults(true);
+  }, [gameIsOver]);
+
   return (
     <div className="grid grid-cols-1 max-w-xl w-fit mx-auto gap-4 relative">
       <div className="text-center text-xl">
@@ -64,7 +89,7 @@ export default function Connections({ gameData }: { gameData: ConnGameData }) {
       <div className="text-center font-semibold h-6">
         {isOneAway && <span>One away!</span>}
       </div>
-      <div className="grid grid-cols-4 grid-rows-4 gap-4 ">
+      <div className="grid grid-cols-4 grid-rows-4 gap-4 sm:min-w-[560px]">
         {/* The found groups... */}
         {gameState.guesses
           .filter((g) => g.correct)
@@ -114,14 +139,8 @@ export default function Connections({ gameData }: { gameData: ConnGameData }) {
           ))}
         </div>
       </div>
-      {gameIsOver || !gameIsOver ? (
+      {gameIsOver ? (
         <div className="flex justify-center gap-1">
-          <button
-            className="text-xl font-medium text-surface-950 border border-surface-800 rounded-full px-3 py-1"
-            onClick={() => setShowResults(true)}
-          >
-            View Results
-          </button>
           <button
             className="text-xl font-medium text-surface-950 border border-surface-800 rounded-full px-3 py-1"
             onClick={() => gameDispatch({ type: "RESET" })}
@@ -129,11 +148,10 @@ export default function Connections({ gameData }: { gameData: ConnGameData }) {
             Reset
           </button>
           <button
-            className="text-xl font-medium text-surface-950 disabled:text-surface-500 border border-surface-800 disabled:border-surface-500 rounded-full px-3 py-1"
-            onClick={() => gameDispatch({ type: "SUBMIT_GUESS" })}
-            disabled={gameState.cards.filter((c) => c.selected).length !== 4}
+            className="text-xl font-medium text-surface-950 border border-surface-800 rounded-full px-3 py-1"
+            onClick={() => setShowResults(true)}
           >
-            Submit
+            View Results
           </button>
         </div>
       ) : (
@@ -160,10 +178,21 @@ export default function Connections({ gameData }: { gameData: ConnGameData }) {
           </button>
         </div>
       )}
+
       {showResults && (
-        <div className="absolute inset-0 bg-white/85 grid place-content-center">
-          <Results guesses={gameState.guesses} />
-        </div>
+        <>
+          {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */}
+          <div
+            className="fixed inset-0 transition bg-white/50 backdrop-blur grid"
+            onClick={() => showResults && setShowResults(false)}
+          >
+            <Results
+              guesses={gameState.guesses}
+              gameNumber={gameData.id}
+              onClose={() => setShowResults(false)}
+            />
+          </div>
+        </>
       )}
     </div>
   );
@@ -188,7 +217,7 @@ function ConnGroup({
   return (
     <div
       className={
-        "h-32 flex items-center rounded-lg text-center col-span-4 " +
+        "h-32 w-full flex items-center rounded-lg text-center col-span-4 " +
         groupColorClass
       }
     >
@@ -242,35 +271,84 @@ function ConnWord({
 }
 
 function Results({
+  gameNumber,
   guesses,
+  onClose,
 }: {
+  gameNumber: number;
   guesses: {
     words: { group: number }[];
   }[];
+  onClose?: () => void;
 }) {
+  useEffect(() => {
+    const callback = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose?.();
+      }
+    };
+    const eventType = "keyup";
+    document.addEventListener(eventType, callback);
+    return () => document.removeEventListener(eventType, callback);
+  });
+
   const groupColorClasses = [
     "bg-yellow-400", // Yellow
     "bg-green-500", // Green
     "bg-sky-500", // Blue
     "bg-purple-500", // Purple
   ];
+  const groupEmojis = ["🟨", "🟩", "🟦", "🟪"];
+
+  const onCopy = () => {
+    const guessLines = guesses.map((g) =>
+      g.words.map((w) => groupEmojis[w.group]).join("")
+    );
+    const shareText = [
+      "Connections",
+      `Puzzle #${gameNumber}`,
+      ...guessLines,
+    ].join("\n");
+    navigator.clipboard.writeText(shareText).catch(console.error);
+  };
+
+  const guessWords = guesses
+    .map((g) => g.words)
+    .flat()
+    .map((w) => w.group);
+
   return (
-    <>
-      <div></div>
-      <div className="h-fit grid grid-cols-4 gap-1 max-w-xs w-fit mx-auto">
-        {guesses
-          .map((g) => g.words)
-          .flat()
-          .map((w, i) => (
-            <div
-              key={i}
-              className={["size-8 rounded-lg", groupColorClasses[w.group]].join(
-                " "
-              )}
-            />
-          ))}
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+    <div
+      className="place-self-center bg-surface-50 rounded-lg px-4 pt-4 pb-12 min-w-72 flex flex-col gap-8"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex justify-end">
+        <button onClick={onClose}>
+          <XMarkIcon className="stroke-surface-950 size-6" />
+          <span className="sr-only">Close Results</span>
+        </button>
       </div>
-      <div></div>
-    </>
+      <div className="text-center text-lg font-medium">
+        Connections #{gameNumber}
+      </div>
+      <div className="h-fit grid grid-cols-4 gap-1 max-w-xs w-fit mx-auto">
+        {guessWords.map((g, i) => (
+          <div
+            key={i}
+            className={["size-8 rounded-lg", groupColorClasses[g]].join(" ")}
+          />
+        ))}
+      </div>
+      <div className="flex justify-center">
+        <button
+          onClick={onCopy}
+          className="bg-surface-950 rounded-full flex items-center gap-1 text-lg text-surface-50 px-3 py-2"
+        >
+          <DocumentDuplicateIcon className="size-5 fill-surface-50" />
+          <span>Copy Results</span>
+        </button>
+      </div>
+    </div>
   );
 }

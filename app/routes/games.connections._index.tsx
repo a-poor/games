@@ -1,9 +1,12 @@
 import { json } from "@remix-run/cloudflare";
-import type { LoaderFunction, MetaFunction } from "@remix-run/cloudflare";
-import { useLoaderData, Form } from "@remix-run/react";
+import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/cloudflare";
+import { useLoaderData } from "@remix-run/react";
 import Nav from "~/components/Nav";
 import { GameListTable, GameListRow } from "~/components/GameListTable";
 import { DateTime } from "luxon";
+import { FIRST_GAME } from "~/lib/connections";
+
+const COUNT_PER_PAGE = 20;
 
 export const meta: MetaFunction = () => {
   return [
@@ -15,33 +18,31 @@ export const meta: MetaFunction = () => {
   ];
 };
 
-export const loader: LoaderFunction = async ({ context, request }) => {
-  // Get the params...
+export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
-  const spage = url.searchParams.get("page") ?? "0";
-  let page = Number(spage);
-  if (!page || page < 0) {
-    page = 0;
+  const params = url.searchParams;
+  const spage = params.get("page") || "1";
+  const page = /^[1-9]+[0-9]?$/.test(spage) ? parseInt(spage, 10) : 1;
+
+  let d = DateTime.now().minus({ days: COUNT_PER_PAGE * (page - 1) });
+  const games = [];
+  for (let i = 0; i < COUNT_PER_PAGE; i++) {
+    const date = d.toISODate();
+    if (date < FIRST_GAME) {
+      break;
+    }
+    games.push(date);
+    d = d.minus({ days: 1 });
   }
-  const count = 20; // TODO - Get from query params?
 
-  const now = DateTime.now().toISODate();
+  const dtotal = DateTime.fromISO(FIRST_GAME).diffNow("days").days * -1;
+  const total = Math.floor(dtotal);
 
-  // Load data from the database...
-  const data = context.cloudflare.env.DB.prepare(
-    `
-      SELECT id
-      FROM connections_games
-      WHERE id < ?
-      ORDER BY id DESC
-      LIMIT ?
-      OFFSET ?;
-    `,
-  )
-    .bind(now, page, count)
-    .all();
-
-  return json({ data });
+  return json({
+    page,
+    total,
+    games,
+  });
 };
 
 export default function Index() {
@@ -51,20 +52,18 @@ export default function Index() {
       <header>
         <Nav />
       </header>
-      <Form method="post" action="/games/connections">
-        <button type="submit">Run</button>
-      </Form>
       <main className="pt-8">
         <div className="max-w-5xl mx-auto px-4">
-          <GameListTable>
-            <GameListRow status="not-started" date="2024-07-06" />
-            <GameListRow status="incomplete" date="2024-07-05" />
-            <GameListRow status="win" date="2024-07-04" />
-            <GameListRow status="not-started" date="2024-07-03" />
-            <GameListRow status="loss" date="2024-07-02" />
+          <GameListTable
+            page={data.page}
+            count={COUNT_PER_PAGE}
+            total={data.total}
+          >
+            {data.games.map((g) => (
+              <GameListRow key={g} date={g} status="not-started" />
+            ))}
           </GameListTable>
         </div>
-        <pre>{JSON.stringify(data, null, 2)}</pre>
       </main>
     </>
   );
