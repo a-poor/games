@@ -1,10 +1,11 @@
 import { useReducer } from "react";
 import type { ConnGameData } from "./dtypes";
-import { useConnGameDBState, setConnGameDBState } from "./data";
+import { setConnGameDBState } from "./data";
 
 export const FIRST_GAME = "2023-06-12";
 
 export type ConnGameState = {
+  date: string;
   groups: {
     group: number;
     name: string;
@@ -22,6 +23,26 @@ export type ConnGameState = {
     }[];
     correct: boolean;
   }[];
+};
+
+export const parseState = (state: ConnGameState) => {
+  if (state.guesses.length === 0) {
+    return "not-started" as const;
+  }
+  if (state.guesses.length < 4) {
+    return "in-progress" as const;
+  }
+  const lossCount = state.guesses.filter((g) => !g.correct).length;
+  if (lossCount === 4) {
+    return "lost" as const;
+  }
+  const winCount = state.guesses.filter((g) => g.correct).length;
+  if (winCount === 4) {
+    return "won" as const;
+  }
+
+  // TODO - Should this be a panic?
+  return "not-started" as const;
 };
 
 export type ConnGameAction =
@@ -83,27 +104,29 @@ export const useConnGameState = (gameData: ConnGameData) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const cards = pcards.map(({ position, ...rest }) => rest);
   const initialState = {
+    date: gameData.print_date,
     groups,
     cards,
     guesses: [],
   } as ConnGameState;
 
   return useReducer((state: ConnGameState, action: ConnGameAction) => {
-    const { groups, cards, guesses } = state;
     console.log("action", action);
+
     switch (action.type) {
       case "SELECT_WORD":
         return (() => {
-          if (cards.filter((c) => c.selected).length >= 4) {
+          if (state.cards.filter((c) => c.selected).length >= 4) {
             return state;
           }
           const newState = {
             ...state,
-            cards: cards.map((c) => ({
+            cards: state.cards.map((c) => ({
               ...c,
               selected: c.word === action.word ? true : c.selected,
             })),
           };
+          console.log("new-state", newState);
           setConnGameDBState(gameData.print_date, newState);
           return newState;
         })();
@@ -111,9 +134,8 @@ export const useConnGameState = (gameData: ConnGameData) => {
       case "DESELECT_WORD":
         return (() => {
           const newState = {
-            groups,
-            guesses,
-            cards: cards.map((c) => ({
+            ...state,
+            cards: state.cards.map((c) => ({
               ...c,
               selected: c.word === action.word ? false : c.selected,
             })),
@@ -155,7 +177,7 @@ export const useConnGameState = (gameData: ConnGameData) => {
       case "SUBMIT_GUESS":
         return (() => {
           // Get the selected words
-          const selectedWords = cards.filter((c) => c.selected);
+          const selectedWords = state.cards.filter((c) => c.selected);
 
           // Are enough selected?
           if (selectedWords.length < 4) {
@@ -209,12 +231,14 @@ export const useConnGameState = (gameData: ConnGameData) => {
           setConnGameDBState(gameData.print_date, newState);
           return newState;
         })();
+
       case "RESET":
         return (() => {
           const newState = structuredClone(initialState);
           setConnGameDBState(gameData.print_date, newState);
           return newState;
         })();
+
       case "SET_STATE":
         return (() => {
           setConnGameDBState(gameData.print_date, action.state); // Necessary?

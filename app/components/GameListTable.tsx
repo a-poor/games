@@ -9,6 +9,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { DateTime } from "luxon";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
+import type { parseState } from "~/lib/connections";
 
 export function GameListTable({
   page,
@@ -91,7 +92,7 @@ export function GameListRow({
   status,
 }: {
   date: string;
-  status: "not-started" | "incomplete" | "win" | "loss";
+  status: ReturnType<typeof parseState>;
 }) {
   const fmtDate = DateTime.fromISO(date).toLocaleString(DateTime.DATE_FULL);
   return (
@@ -103,19 +104,19 @@ export function GameListRow({
             <span className="sr-only">Not Started</span>
           </>
         )}
-        {status === "incomplete" && (
+        {status === "in-progress" && (
           <>
             <MinusCircleIcon className="size-6 fill-amber-400" />
             <span className="sr-only">Incomplete</span>
           </>
         )}
-        {status === "win" && (
+        {status === "won" && (
           <>
             <CheckCircleIcon className="size-6 fill-green-500" />
             <span className="sr-only">Win</span>
           </>
         )}
-        {status === "loss" && (
+        {status === "lost" && (
           <>
             <XCircleIcon className="size-6 fill-rose-500" />
             <span className="sr-only">Loss</span>
@@ -194,6 +195,9 @@ export function GameListPagination({
   count: number;
   total: number;
 }) {
+  const countPerPage = 20;
+  const nfirst = (page - 1) * countPerPage + 1;
+  const nlast = nfirst + count - 1;
   return (
     <nav
       className="flex items-center justify-between border-t border-surface-200 bg-white px-4 py-3 sm:px-6"
@@ -202,9 +206,9 @@ export function GameListPagination({
       <div className="hidden sm:block">
         <p className="text-sm text-surface-700">
           <span>Showing </span>
-          <span className="font-medium">{(page - 1) * count + 1}</span>
+          <span className="font-medium">{nfirst}</span>
           <span> to </span>
-          <span className="font-medium">{page * count}</span>
+          <span className="font-medium">{nlast}</span>
           <span> of </span>
           <span className="font-medium">{total}</span>
           <span> results</span>

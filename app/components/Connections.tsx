@@ -10,11 +10,6 @@ const MISTAKE_COUNT = 4;
 
 const SHOW_ONE_AWAY_TIMEOUT = 5000;
 
-/**
- *
- *
- * @todo Limit adjust card font size by word length
- */
 export default function Connections({ gameData }: { gameData: ConnGameData }) {
   const [loaded, setLoaded] = useState(false);
   const [gameState, gameDispatch] = useConnGameState(gameData);
@@ -24,13 +19,16 @@ export default function Connections({ gameData }: { gameData: ConnGameData }) {
       .then((db) => db.get(CONN_STATE_STORE_NAME, gameData.print_date))
       .then((data) => {
         if (data) {
+          console.log("Setting game state from DB...");
           gameDispatch({ type: "SET_STATE", state: data });
         }
         setLoaded(true);
       });
   });
 
-  const gameIsOver = gameState.guesses.length === 4;
+  const lostGame = gameState.guesses.filter((g) => !g.correct).length === 4;
+  const wonGame = gameState.guesses.filter((g) => g.correct).length === 4;
+  const gameIsOver = wonGame || lostGame;
 
   const [showResults, setShowResults] = useState(false);
 

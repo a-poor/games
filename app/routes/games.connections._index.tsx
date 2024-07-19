@@ -4,7 +4,9 @@ import { useLoaderData } from "@remix-run/react";
 import Nav from "~/components/Nav";
 import { GameListTable, GameListRow } from "~/components/GameListTable";
 import { DateTime } from "luxon";
-import { FIRST_GAME } from "~/lib/connections";
+import { FIRST_GAME, parseState } from "~/lib/connections";
+import { useEffect, useState } from "react";
+import { getGamesDB, CONN_STATE_STORE_NAME } from "~/lib/data";
 
 const COUNT_PER_PAGE = 20;
 
@@ -45,8 +47,33 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   });
 };
 
+type GameStatus = ReturnType<typeof parseState>;
+
 export default function Index() {
   const data = useLoaderData<typeof loader>();
+  const [games, setGames] = useState(
+    data.games.map((d) => ({ date: d, status: "not-started" as GameStatus }))
+  );
+  useEffect(() => {
+    const upperKey = games[0].date;
+    const lowerKey = games[games.length - 1].date;
+    const range = IDBKeyRange.bound(lowerKey, upperKey);
+    getGamesDB()
+      .then((db) => db.getAll(CONN_STATE_STORE_NAME, range))
+      .then((states) => {
+        const stateMap = new Map<string, GameStatus>(
+          states.map((s) => [s.date, parseState(s)])
+        );
+        const newGames = games.map((g) => {
+          const status = stateMap.get(g.date);
+          return {
+            date: g.date,
+            status: status ?? ("not-started" as const),
+          };
+        });
+        setGames(newGames);
+      });
+  }, [games]);
   return (
     <>
       <header>
@@ -56,11 +83,11 @@ export default function Index() {
         <div className="max-w-5xl mx-auto px-4">
           <GameListTable
             page={data.page}
-            count={COUNT_PER_PAGE}
+            count={data.games.length}
             total={data.total}
           >
-            {data.games.map((g) => (
-              <GameListRow key={g} date={g} status="not-started" />
+            {games.map((g) => (
+              <GameListRow key={g.date} date={g.date} status={g.status} />
             ))}
           </GameListTable>
         </div>
