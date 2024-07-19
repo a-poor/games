@@ -1,14 +1,8 @@
 import type { MetaFunction } from "@remix-run/cloudflare";
 import Nav from "~/components/Nav";
 
-export const meta: MetaFunction = () => {
-  return [
-    { title: "New Remix App" },
-    {
-      name: "description",
-      content: "Welcome to Remix on Cloudflare!",
-    },
-  ];
+export const meta: MetaFunction = ({ params }) => {
+  return [{ title: `Strands ${params.gid}` }];
 };
 
 export default function Index() {

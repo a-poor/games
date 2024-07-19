@@ -2,13 +2,7 @@ import type { MetaFunction } from "@remix-run/cloudflare";
 import Nav from "~/components/Nav";
 
 export const meta: MetaFunction = () => {
-  return [
-    { title: "New Remix App" },
-    {
-      name: "description",
-      content: "Welcome to Remix on Cloudflare!",
-    },
-  ];
+  return [{ title: "Strands" }];
 };
 
 export default function Index() {

@@ -11,13 +11,7 @@ import { getGamesDB, CONN_STATE_STORE_NAME } from "~/lib/data";
 const COUNT_PER_PAGE = 20;
 
 export const meta: MetaFunction = () => {
-  return [
-    { title: "Connections" },
-    {
-      name: "description",
-      content: "Welcome to Remix on Cloudflare!",
-    },
-  ];
+  return [{ title: "Connections" }];
 };
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {

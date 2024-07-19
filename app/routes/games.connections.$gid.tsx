@@ -20,14 +20,8 @@ import { useEffect } from "react";
 const fmtConnGameDataUrl = (d: string) =>
   `https://www.nytimes.com/svc/connections/v2/${d}.json`;
 
-export const meta: MetaFunction = () => {
-  return [
-    { title: "New Remix App" },
-    {
-      name: "description",
-      content: "Welcome to Remix on Cloudflare!",
-    },
-  ];
+export const meta: MetaFunction = ({ params }) => {
+  return [{ title: `Connections ${params.gid}` }];
 };
 
 export async function loader({
