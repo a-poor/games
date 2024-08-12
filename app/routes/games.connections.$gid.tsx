@@ -5,7 +5,6 @@ import type {
   TypedResponse,
 } from "@remix-run/cloudflare";
 import { ClientLoaderFunctionArgs, useLoaderData } from "@remix-run/react";
-import { DateTime } from "luxon";
 import Nav from "~/components/Nav";
 import type { ConnGameData } from "~/lib/dtypes";
 import Connections from "~/components/Connections";
@@ -13,9 +12,9 @@ import { FIRST_GAME } from "~/lib/connections";
 import {
   getGamesDB,
   CONN_DATA_STORE_NAME,
-  CONN_STATE_STORE_NAME,
+  // CONN_STATE_STORE_NAME,
 } from "~/lib/data";
-import { useEffect } from "react";
+// import { useEffect } from "react";
 
 const fmtConnGameDataUrl = (d: string) =>
   `https://www.nytimes.com/svc/connections/v2/${d}.json`;
@@ -54,14 +53,14 @@ export async function loader({
       statusText: "Not found",
     });
   }
-  if (gid > DateTime.now().toISODate()) {
-    // In the future
-    console.error(`In the future: ${gid}`);
-    throw new Response(null, {
-      status: 404,
-      statusText: "Not found",
-    });
-  }
+  // if (gid > DateTime.now().toISODate()) {
+  //   // In the future
+  //   console.error(`In the future: ${gid}`);
+  //   throw new Response(null, {
+  //     status: 404,
+  //     statusText: "Not found",
+  //   });
+  // }
 
   // Try to get that from the object store...
   const bucket = context.cloudflare.env.GAMES_BUCKET;
@@ -81,7 +80,15 @@ export async function loader({
 
   // Otherwise, try to fetch it
   const url = fmtConnGameDataUrl(gid);
-  const data = await fetch(url).then((d) => d.json());
+  const data = await fetch(url)
+    .then((d) => d.json())
+    .catch((err) => {
+      console.error("Error fetching data: " + err);
+      throw new Response(null, {
+        status: 404,
+        statusText: "Not found",
+      });
+    });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ((data as any)?.status?.toLowerCase() !== "ok") {
     console.error(
@@ -134,11 +141,11 @@ export async function clientLoader({
 
 export default function Index() {
   const data = useLoaderData<typeof loader>();
-  useEffect(() => {
-    getGamesDB()
-      .then((db) => db.get(CONN_STATE_STORE_NAME, data.print_date))
-      .then((d) => {});
-  });
+  // useEffect(() => {
+  //   getGamesDB()
+  //     .then((db) => db.get(CONN_STATE_STORE_NAME, data.print_date))
+  //     .then((d) => {});
+  // });
   return (
     <>
       <header>
