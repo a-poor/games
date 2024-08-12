@@ -1,26 +1,10 @@
 import { json } from "@remix-run/cloudflare";
-import type {
-  LoaderFunctionArgs,
-  MetaFunction,
-  TypedResponse,
-} from "@remix-run/cloudflare";
-import { ClientLoaderFunctionArgs, useLoaderData } from "@remix-run/react";
+import type { LoaderFunctionArgs, TypedResponse } from "@remix-run/cloudflare";
 import type { ConnGameData } from "~/lib/dtypes";
-import Connections from "~/components/Connections";
 import { FIRST_GAME } from "~/lib/connections";
-import {
-  getGamesDB,
-  CONN_DATA_STORE_NAME,
-  // CONN_STATE_STORE_NAME,
-} from "~/lib/data";
-// import { useEffect } from "react";
 
 const fmtConnGameDataUrl = (d: string) =>
   `https://www.nytimes.com/svc/connections/v2/${d}.json`;
-
-export const meta: MetaFunction = ({ params }) => {
-  return [{ title: `Connections ${params.gid}` }];
-};
 
 export async function loader({
   context,
@@ -99,44 +83,4 @@ export async function loader({
       "Cache-Control": "public, max-age=3600",
     },
   });
-}
-
-export async function clientLoader({
-  params,
-  serverLoader,
-}: ClientLoaderFunctionArgs) {
-  // Get the game id param...
-  const gameId = params.gid;
-  if (!gameId) {
-    return serverLoader<typeof loader>();
-  }
-
-  // Check if we have it in the store...
-  const db = await getGamesDB();
-  const gameData = await db.get(CONN_DATA_STORE_NAME, gameId);
-
-  // If we have it, return it...
-  if (gameData) {
-    return gameData;
-  }
-
-  // Otherwise, fetch it...
-  const data = await serverLoader<typeof loader>();
-
-  // And store it...
-  await db.put(CONN_DATA_STORE_NAME, data, gameId);
-
-  // And return it...
-  return data;
-}
-
-export default function Index() {
-  const data = useLoaderData<typeof loader>();
-  return (
-    <>
-      <main>
-        <Connections gameData={data} />
-      </main>
-    </>
-  );
 }

@@ -1,11 +1,17 @@
 import { json } from "@remix-run/cloudflare";
-import type { LoaderFunctionArgs, MetaFunction } from "@remix-run/cloudflare";
+import type { MetaFunction } from "@remix-run/cloudflare";
 import { useLoaderData } from "@remix-run/react";
-import Nav from "~/components/Nav";
+import type { ClientLoaderFunctionArgs } from "@remix-run/react";
 import { GameListTable, GameListRow } from "~/components/GameListTable";
 import { DateTime } from "luxon";
 import { FIRST_GAME, parseState } from "~/lib/connections";
-import { getGamesDB, CONN_STATE_STORE_NAME } from "~/lib/data";
+import type { ConnGameData } from "~/lib/dtypes";
+import {
+  getGamesDB,
+  CONN_DATA_STORE_NAME,
+  CONN_STATE_STORE_NAME,
+} from "~/lib/data";
+import { useEffect } from "react";
 
 const COUNT_PER_PAGE = 20;
 
@@ -13,7 +19,7 @@ export const meta: MetaFunction = () => {
   return [{ title: "Connections" }];
 };
 
-export const clientLoader = async ({ request }: LoaderFunctionArgs) => {
+export const clientLoader = async ({ request }: ClientLoaderFunctionArgs) => {
   const url = new URL(request.url);
   const params = url.searchParams;
   const spage = params.get("page") || "1";
@@ -67,12 +73,12 @@ type GameStatus = ReturnType<typeof parseState>;
 
 export default function Index() {
   const data = useLoaderData<typeof clientLoader>();
-  const games = data.games;
+  useEffect(() => {
+    const games = data.games.map((g) => g.date);
+    loadPageOfGameData(games);
+  }, [data]);
   return (
     <>
-      <header>
-        <Nav />
-      </header>
       <main className="pt-8">
         <div className="max-w-5xl mx-auto px-4">
           <GameListTable
@@ -80,12 +86,44 @@ export default function Index() {
             count={data.games.length}
             total={data.total}
           >
-            {games.map((g) => (
+            {data.games.map((g) => (
               <GameListRow key={g.date} date={g.date} status={g.status} />
             ))}
           </GameListTable>
         </div>
       </main>
     </>
+  );
+}
+
+async function loadPageOfGameData(games: string[]) {
+  // Get the database connection...
+  const db = await getGamesDB();
+
+  // For each of the games...
+  Promise.allSettled(
+    games.map(async (gid) => {
+      // See if the game exists in the database...
+      const data = await db.get(CONN_DATA_STORE_NAME, gid);
+
+      // If it does, skip it...
+      if (data) {
+        return;
+      }
+
+      // Otherwise, fetch it...
+      const res = await fetch(`/games/connections/${gid}.json`);
+
+      // If the response wasn't successful, skip it...
+      if (!res.ok) {
+        console.error("Failed to load game data for", gid);
+        return;
+      }
+
+      // Otherwise, store it...
+      const gameData = (await res.json()) as ConnGameData;
+
+      await db.put(CONN_DATA_STORE_NAME, gameData, gid);
+    })
   );
 }

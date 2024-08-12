@@ -34,6 +34,8 @@ export const getGamesDB = async () => {
   return db;
 };
 
+export const useConnGameDB = () => useAsync(getGamesDB)
+
 export const useConnGameDBData = (gameId: string) => {
   return useAsync(async () => {
     const db = await getGamesDB();
