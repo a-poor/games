@@ -200,7 +200,7 @@ export function GameListPagination({
   const nlast = nfirst + count - 1;
   return (
     <nav
-      className="flex items-center justify-between border-t border-surface-200 bg-white px-4 py-3 sm:px-6"
+      className="flex items-center justify-betwee bg-white px-4 py-3 sm:px-6"
       aria-label="Pagination"
     >
       <div className="hidden sm:block">
