@@ -26,8 +26,13 @@ export const clientLoader = async ({ request }: ClientLoaderFunctionArgs) => {
   const page = /^[1-9]+[0-9]?$/.test(spage) ? parseInt(spage, 10) : 1;
 
   let d = DateTime.now().minus({ days: COUNT_PER_PAGE * (page - 1) });
+  let count = COUNT_PER_PAGE;
+  if (page === 1) {
+    d = d.plus({ days: 7 });
+    count += 7;
+  }
   const games = [];
-  for (let i = 0; i < COUNT_PER_PAGE; i++) {
+  for (let i = 0; i < count; i++) {
     const date = d.toISODate();
     if (date < FIRST_GAME) {
       break;
@@ -77,16 +82,17 @@ export default function Index() {
     const games = data.games.map((g) => g.date);
     loadPageOfGameData(games);
   }, [data]);
+  const games = data.games.filter((g) => g.date <= DateTime.now().toISODate());
   return (
     <>
       <main className="pt-8">
         <div className="max-w-5xl mx-auto px-4">
           <GameListTable
             page={data.page}
-            count={data.games.length}
+            count={games.length}
             total={data.total}
           >
-            {data.games.map((g) => (
+            {games.map((g) => (
               <GameListRow key={g.date} date={g.date} status={g.status} />
             ))}
           </GameListTable>
